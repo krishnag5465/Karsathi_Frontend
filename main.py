@@ -113,5 +113,5 @@ def main():
     elif selected == "About":
         show_about()
 
-if __name__ == "_main_":
+if __name__ == "__main__":
     main()
