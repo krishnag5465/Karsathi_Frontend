@@ -1,7 +1,6 @@
-# app.py
-
 import streamlit as st
 import cv2
+import time
 from streamlit_option_menu import option_menu
 
 # Page config
@@ -12,7 +11,59 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Sidebar menu using option_menu
+# Initialize user database in session state (fake DB)
+if "user_db" not in st.session_state:
+    st.session_state.user_db = {
+        "Krishna Gupta": "12345",
+        "Test User": "password"
+    }
+
+def login_page():
+    st.markdown("<h1 style='text-align: center;'>🔐 Login to Karsaathi</h1>", unsafe_allow_html=True)
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    login = st.button("Login")
+
+    if login:
+        if username.strip() == "" or password.strip() == "":
+            st.warning("Please enter both username and password.")
+            return
+        if username in st.session_state.user_db and st.session_state.user_db[username] == password:
+            st.session_state.logged_in = True
+            st.session_state.username = username
+            st.success(f"Welcome back, {username}!")
+            st.experimental_rerun()
+        else:
+            st.error("Invalid credentials. Please try again.")
+
+    st.markdown(
+        """
+        <p style='text-align: center; margin-top:20px;'>
+        Don't have an account? 👉 <a href="#" onclick="window.location.reload()">Register here</a>
+        </p>
+        """, 
+        unsafe_allow_html=True
+    )
+
+def register_page():
+    st.markdown("<h1 style='text-align: center;'>📝 Register for Karsaathi</h1>", unsafe_allow_html=True)
+
+    new_user = st.text_input("Choose a username")
+    new_pass = st.text_input("Choose a password", type="password")
+    register = st.button("Register")
+
+    if register:
+        if new_user.strip() == "" or new_pass.strip() == "":
+            st.warning("Please enter both username and password.")
+            return
+        if new_user in st.session_state.user_db:
+            st.error("Username already exists. Please choose another.")
+        else:
+            st.session_state.user_db[new_user] = new_pass
+            st.success("Registered successfully! You can now log in.")
+            st.experimental_rerun()
+
 def sidebar_menu():
     with st.sidebar:
         selected = option_menu(
@@ -24,7 +75,6 @@ def sidebar_menu():
         )
     return selected
 
-# Home Page
 def show_home():
     st.title("🤟 Welcome to Karsaathi!")
     st.markdown("""
@@ -38,13 +88,9 @@ def show_home():
     """)
     st.image("https://cdn-icons-png.flaticon.com/512/3050/3050525.png", width=200)
 
-# Placeholder - Learn Signs Page
 def show_learn():
     st.subheader("📚 Learn Indian Sign Language")
     st.markdown("Coming soon: Alphabet, Numbers, and Basic Words with visuals.")
-
-# Translate Page with Webcam Feed
-import time  # Make sure this is at the top of your file
 
 def show_translate():
     st.subheader("📷 Real-Time Gesture Recognition")
@@ -66,7 +112,6 @@ def show_translate():
             st.error("Unable to access the camera.")
             return
 
-        # Stream camera for a few seconds (simulate real-time)
         for i in range(200):
             ret, frame = cap.read()
             if not ret:
@@ -77,7 +122,6 @@ def show_translate():
             FRAME_WINDOW.image(frame)
             time.sleep(0.03)
 
-            # Stop early if user turns off camera
             if not st.session_state["camera_active"]:
                 break
 
@@ -89,7 +133,6 @@ def show_community():
     st.subheader("👥 Community")
     st.markdown("This will be a space to share, ask, and support each other. Coming soon!")
 
-# About Page
 def show_about():
     st.subheader("ℹ About Karsaathi")
     st.markdown("""
@@ -98,8 +141,7 @@ def show_about():
     - Aims to empower communication with ISL
     """)
 
-# Main function
-def main():
+def main_app():
     selected = sidebar_menu()
 
     if selected == "Home":
@@ -112,6 +154,25 @@ def main():
         show_community()
     elif selected == "About":
         show_about()
+
+def main():
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+
+    if not st.session_state.logged_in:
+        login_or_register = st.radio("Choose:", ["Login", "Register"], horizontal=True)
+        if login_or_register == "Login":
+            login_page()
+        else:
+            register_page()
+    else:
+        st.sidebar.title(f"👋 Hello, {st.session_state.username}")
+        if st.sidebar.button("Logout"):
+            st.session_state.logged_in = False
+            st.session_state.username = ""
+            st.experimental_rerun()
+
+        main_app()
 
 if __name__ == "__main__":
     main()
